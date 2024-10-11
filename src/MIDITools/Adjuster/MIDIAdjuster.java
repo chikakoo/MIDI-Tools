@@ -31,6 +31,29 @@ public class MIDIAdjuster {
     }
 
     /**
+     * Adds a new event short message to the midi
+     * @param track - The track to add to
+     * @param channel - The channel to add to
+     * @param eventNumber - The event number to add
+     * @param eventValue - The value to set the event to
+     * @param tick - When to set it
+     * @param eventDisplayName - The name of the event to show in the verbose log
+     */
+    protected static void addNewShortMessage(
+            Track track,
+            int channel,
+            int eventNumber,
+            int eventValue,
+            long tick,
+            String eventDisplayName) {
+        ShortMessage vibratoDepthMessage = new ShortMessage();
+        setShortMessage(vibratoDepthMessage, ShortMessage.CONTROL_CHANGE, channel, eventNumber, eventValue);
+        track.add(new MidiEvent(vibratoDepthMessage, tick));
+
+        verboseLog("Added " + eventDisplayName + " of " + eventValue + " at tick " + tick, channel);
+    }
+
+    /**
      * Deletes the given array of events from the track
      * NEVER call this in the middle of traversing the events in a loop!
      * @param track - The track

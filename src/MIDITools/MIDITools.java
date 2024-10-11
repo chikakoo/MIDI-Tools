@@ -37,7 +37,7 @@ public class MIDITools {
      * The default range to use for vibrato - 5 seems to be the equivalent
      * of OoT's 127, but this is situational
      */
-    public static double defaultVibratoRange = 5;
+    private final static double DEFAULT_VIBRATO_RANGE = 5;
 
     /**
      * Clean-up section
@@ -85,12 +85,13 @@ public class MIDITools {
                     PitchBendAdjuster.editMidiPitchBends(sequence);
                     break;
                 case Vibrato:
+                    double defaultVibratoRange = DEFAULT_VIBRATO_RANGE;
                     nextParameter = getNextParameter(args, argIndex);
                     if (!nextParameter.isEmpty()) {
                         defaultVibratoRange = Integer.parseInt(getNextParameter(args, argIndex));
                         argIndex++;
                     }
-                    VibratoAdjuster.editMidiVibrato(sequence);
+                    VibratoAdjuster.editMidiVibrato(sequence, defaultVibratoRange);
                     break;
                 case CleanUp:
                     nextParameter = getNextParameter(args, argIndex);

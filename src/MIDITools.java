@@ -2,6 +2,8 @@ import javax.sound.midi.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.text.DecimalFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MIDITools {
     /**
@@ -19,6 +21,13 @@ public class MIDITools {
     //<editor-fold desc="Constants">
 
     /**
+     * The user has to manually set the verbose flag if they wish to log everything
+     * There's potentially a ton of things logged, so this is off by default
+     */
+    private static final String VERBOSE_FLAG = "--verbose";
+    private static boolean verboseLogging = false;
+
+    /**
      * Anvil Studio uses the "Data Slider" event for this
      * It uses the CONTROL_CHANGE message, with a Data 1 value of 6
      */
@@ -34,10 +43,11 @@ public class MIDITools {
     private static final int DEFAULT_DATA_2 = 0;
 
     /**
-     * This is what OoT sets the range to
+     * OoT assumes the pitch bend range is the full octave (a range of 12)
+     * Anvil Studio assumes it's 2 if no range is explicitly set
      */
     private static final int DESIRED_PITCH_BEND_RANGE = 12;
-    private static double defaultBendFactor = 6;
+    private static double defaultPitchBendRange = 2;
 
     /**
      * Vibrato Section
@@ -57,8 +67,7 @@ public class MIDITools {
     //<editor-fold desc="Main / File Writing">
 
     public static void main(String[] args) {
-        if (args.length < 2  || args[0].trim().isEmpty()) {
-            showUsage("ERROR: The midi filename and at least one transformation is required.");
+        if (!validateArgsAndSetVerbosity(args)) {
             System.exit(0);
         }
 
@@ -74,7 +83,7 @@ public class MIDITools {
             return;
         }
 
-        int argIndex = 1;
+        int argIndex = verboseLogging ? 2 : 1; // The logging flag adds one argument
         do {
             Transformation transformation = getTransformation(args[argIndex]);
             if (transformation == Transformation.Undefined) {
@@ -88,7 +97,7 @@ public class MIDITools {
                 case PitchBend:
                     nextParameter = getNextParameter(args, argIndex);
                     if (!nextParameter.isEmpty()) {
-                        defaultBendFactor = Double.parseDouble(getNextParameter(args, argIndex));
+                        defaultPitchBendRange = Double.parseDouble(getNextParameter(args, argIndex));
                         argIndex++;
                     }
                     editMidiPitchBends(sequence);
@@ -160,13 +169,41 @@ public class MIDITools {
     }
 
     /**
+     * Validates the arguments and sets the verbosity flag
+     * - If no verbosity flag, validates there's a filename and at least one other parameter
+     * - If verbosity flag, validates there's a filename and at least noe parameter after that flag
+     * @param args - The given command line arguments
+     * @return True if validation was successful; false otherwise
+     */
+    private static boolean validateArgsAndSetVerbosity(String[] args) {
+        // There must be at least 2 args
+        boolean areArgsValid = args.length >= 2 && !args[0].trim().isEmpty();
+
+        // Check whether the second argument is the verbose flag and set it if so
+        if (args[1].trim().equals(VERBOSE_FLAG)) {
+            verboseLogging = true;
+
+            // If there's a verbose flag, we need one more argument!
+            if (args.length < 3) {
+                areArgsValid = false;
+            }
+        }
+
+        if (!areArgsValid) {
+            showUsage("ERROR: The midi filename and at least one transformation is required.");
+        }
+
+        return areArgsValid;
+    }
+
+    /**
      * Gets the next parameter from the arguments
      * - If it is a flag or the end of the array, return the empty string
      * @param args - The arguments array
      * @param currentIndex - The index of the current value we are at (the one BEFORE the one we're trying to get)
      * @return The next parameter, or the empty string if there is none
      */
-    public static String getNextParameter(String[] args, int currentIndex) {
+    private static String getNextParameter(String[] args, int currentIndex) {
         int nextIndex = currentIndex + 1;
         if (nextIndex >= args.length) {
             return ""; // End of the array
@@ -210,13 +247,13 @@ public class MIDITools {
         System.out.println(error);
         System.out.println();
 
-        System.out.println("usage: [midi filename] [a list of flags and their parameters]");
+        System.out.println("usage: [midi filename] [--verbose (optional)] [a list of flags and their parameters]");
         System.out.println("\tRuns all given parameter transformations in the order given.");
         System.out.println();
 
-        System.out.println("-p (pitch bend) [default range = 6]");
+        System.out.println("-p (pitch bend) [default range = 2]");
         System.out.println("\tAdjusts all pitch bend events by the given default range");
-        System.out.println("\tAutomatically detects the range in the midi if there is one");
+        System.out.println("\tAutomatically detects and uses the range in the midi if there is one");
         System.out.println();
 
         System.out.println("-v (vibrato) [vibrato range = 5]");
@@ -335,10 +372,7 @@ public class MIDITools {
         // Print out a summary
         System.out.println();
         printMessages(pitchBendRangeMessages);
-
-        System.out.println();
-        System.out.println("Channels adjusted: " + String.join(", ", channelsWithAdjustments));
-
+        showChannelsModifiedMessage(channelsWithAdjustments, "Channels adjusted");
         System.out.println();
     }
 
@@ -377,7 +411,9 @@ public class MIDITools {
         }
 
         // If it gets here, no message was found, so adjust by the default factor
-        return defaultBendFactor;
+        // The bend factor is equal to the desired range divided by what the range is now
+        // - So, if both are the same, the bend factor is 1, meaning no adjustments needed
+        return (double)DESIRED_PITCH_BEND_RANGE / defaultPitchBendRange;
     }
 
     /**
@@ -451,7 +487,7 @@ public class MIDITools {
         // Same story for those with a value less than 1
         // Anvil Studio treats it as a 2, so we will do the same
         double bendFactor = (oldPitchBendRange > DESIRED_PITCH_BEND_RANGE) && (oldPitchBendRange > 0)
-            ? defaultBendFactor
+            ? (double)DESIRED_PITCH_BEND_RANGE / defaultPitchBendRange
             : (double)DESIRED_PITCH_BEND_RANGE / oldPitchBendRange;
 
         DecimalFormat df = new DecimalFormat();
@@ -485,7 +521,7 @@ public class MIDITools {
 
         int realNewValue = getPitchBendValue(newData1, newData2);
         if (realNewValue != BASE_VALUE) {
-            System.out.println("Channel " + (channel + 1) + ": Adjusting pitch bend value " + value + " to be " + realNewValue);
+            verboseLog("Adjusting pitch bend value " + value + " to be " + realNewValue, channel);
             return true;
         }
 
@@ -513,8 +549,7 @@ public class MIDITools {
      * @param sequence - The sequence to modify
      */
     private static void editMidiVibrato(Sequence sequence) {
-        ArrayList<String> vibratoMessages = new ArrayList<>();
-        boolean addedAnyVibratos = false;
+        ArrayList<String> vibratoChannelsAdded = new ArrayList<>();
         for (Track track : sequence.getTracks()) {
             if (!checkNeedToAddVibratoEventsAndDeleteIfSo(track)) {
                 continue;
@@ -550,10 +585,9 @@ public class MIDITools {
                             if (lastVibratoAdded != vibratoDepth) {
                                 // Only list the message once; do so before the first vibrato is added
                                 if (lastVibratoAdded == -1) {
-                                    vibratoMessages.add("Channel " + (channel + 1) + ": added vibrato!");
+                                    vibratoChannelsAdded.add(String.valueOf(channel + 1));
                                 }
 
-                                addedAnyVibratos = true;
                                 lastVibratoAdded = vibratoDepth;
                                 addVibratoToTrack(track, channel, vibratoDepth, e.getTick());
                             }
@@ -569,8 +603,8 @@ public class MIDITools {
             }
         }
 
-        if (addedAnyVibratos) {
-            printMessages(vibratoMessages);
+        if (!vibratoChannelsAdded.isEmpty()) {
+            showChannelsModifiedMessage(vibratoChannelsAdded, "Vibrato added to channels");
         }
     }
 
@@ -625,6 +659,8 @@ public class MIDITools {
         ShortMessage vibratoDepthMessage = new ShortMessage();
         setShortMessage(vibratoDepthMessage, ShortMessage.CONTROL_CHANGE, channel, VIBRATO_DEPTH_EVENT, vibratoDepth);
         track.add(new MidiEvent(vibratoDepthMessage, tick));
+
+        verboseLog("Added vibrato depth of " + vibratoDepth + " at tick " + tick, channel);
     }
 
     //</editor-fold>
@@ -636,9 +672,11 @@ public class MIDITools {
         int eventNumber,
         int tolerance,
         boolean cleanUpPitchBend) {
+        ArrayList<String> channelsCleanedUp = new ArrayList<>();
         for (Track track : sequence.getTracks()) {
             ArrayList<MidiEvent> eventsToDelete = new ArrayList<>();
             int lastBaseValue = -1;
+            int channel = -1;
 
             for (int i = 0; i < track.size(); i++) {
                 MidiEvent e = track.get(i);
@@ -646,6 +684,7 @@ public class MIDITools {
                 if (msg instanceof ShortMessage) {
                     ShortMessage shortMsg = (ShortMessage) msg;
                     int command = shortMsg.getCommand();
+                    channel = shortMsg.getChannel();
                     int data1 = shortMsg.getData1();
                     int data2 = shortMsg.getData2();
                     int value = -1;
@@ -677,27 +716,59 @@ public class MIDITools {
                         continue;
                     }
 
-                    // Next value is greater than the base value, but not within tolerance
-                    if (value > lastBaseValue &&
-                        lastBaseValue + tolerance > value) {
+                    // If the value is outside the allowed tolerance, mark it for deletion
+                    if (!isValueWithinTolerance(lastBaseValue, value, tolerance)) {
                         eventsToDelete.add(e);
+
+                        String eventString = cleanUpPitchBend
+                            ? "Pitch Bend event"
+                            : "event " + eventNumber;
+                        verboseLog("Deleted " + eventString + " at tick " + e.getTick(), channel);
                     }
 
-                    // Next value is smaller than the base value, but not within tolerance
-                    else if (value < lastBaseValue &&
-                        lastBaseValue - tolerance < value) {
-                        eventsToDelete.add(e);
-                    }
-
-                    // All other cases, we've kept the event, so we should update the base value
+                    // Otherwise, we've kept the event, so update the base value
                     else {
                         lastBaseValue = value;
                     }
                 }
             }
 
+            if (!eventsToDelete.isEmpty()) {
+                channelsCleanedUp.add(String.valueOf(channel + 1));
+            }
             deleteEventsFromTrack(track, eventsToDelete);
         }
+
+        String eventString = cleanUpPitchBend
+            ? "Pitch Bend events"
+            : "Event " + eventNumber;
+        showChannelsModifiedMessage(channelsCleanedUp, eventString + " cleaned up on channels");
+    }
+
+    /**
+     * Checks whether the current value is in range of the base value, within a certain tolerance
+     * - Example: Base value is 100; current is 110; tolerance is 15
+     * -  Because 100 is only 10 away from 110, it passes with a tolerance of 15
+     * -  It would NOT pass if the tolerance was 5
+     * @param baseValue - The base value
+     * @param currentValue - The current value to check against the base
+     * @param tolerance - The tolerance
+     * @return True if it's within range; false otherwise
+     */
+    private static boolean isValueWithinTolerance(int baseValue, int currentValue, int tolerance) {
+        // The current value is greater and outside the allowed range
+        if (currentValue > baseValue &&
+            baseValue + tolerance > currentValue) {
+            return false;
+        }
+
+        // The current value is smaller and outside the allowed range
+        if (currentValue < baseValue &&
+            baseValue - tolerance < currentValue) {
+            return false;
+        }
+
+        return true;
     }
 
     //</editor-fold>
@@ -716,11 +787,11 @@ public class MIDITools {
         int eventNumber,
         int amount,
         boolean modifyPitchBendEvent) {
+        Set<String> channelsAdjusted = new HashSet<>();
         for (Track track : sequence.getTracks()) {
             for (int i = 0; i < track.size(); i++) {
                 MidiEvent e = track.get(i);
                 MidiMessage msg = e.getMessage();
-                int value = -1;
 
                 if (msg instanceof ShortMessage) {
                     ShortMessage shortMsg = (ShortMessage) msg;
@@ -731,20 +802,34 @@ public class MIDITools {
 
                     if (modifyPitchBendEvent) {
                         if (command == ShortMessage.PITCH_BEND) {
-                            value = getPitchBendValue(data1, data2);
-                            value += amount;
+                            channelsAdjusted.add(String.valueOf(channel + 1));
+                            int oldPitchBendValue = getPitchBendValue(data1, data2);
+                            int newPitchBendValue = oldPitchBendValue + amount;
 
-                            int newData1 = value % 128;
-                            int newData2 = value / 128;
+                            int newData1 = oldPitchBendValue % 128;
+                            int newData2 = oldPitchBendValue / 128;
                             setShortMessage(shortMsg, ShortMessage.PITCH_BEND, channel, newData1, newData2);
+
+                            String valueString = oldPitchBendValue + " -> " + newPitchBendValue;
+                            verboseLog("Pitch Bend event " + valueString + " at tick " + e.getTick(), channel);
                         }
                     } else if (command == ShortMessage.CONTROL_CHANGE && data1 == eventNumber) {
-                        value = data2 + amount;
-                        setShortMessage(shortMsg, ShortMessage.CONTROL_CHANGE, channel, eventNumber, value);
+                        channelsAdjusted.add(String.valueOf(channel + 1));
+                        int oldEventValue = data2;
+                        int newEventValue = oldEventValue + amount;
+                        setShortMessage(shortMsg, ShortMessage.CONTROL_CHANGE, channel, eventNumber, newEventValue);
+
+                        String valueString = oldEventValue + " -> " + newEventValue;
+                        verboseLog("Event " + eventNumber + " - " + valueString + " at tick " + e.getTick(), channel);
                     }
                 }
             }
         }
+
+        String eventString = modifyPitchBendEvent
+            ? "Pitch Bend events"
+            : "Event " + eventNumber;
+        showChannelsModifiedMessage(new ArrayList<>(channelsAdjusted), eventString + " changed by " + amount + " on channels: ");
     }
 
     //</editor-fold>
@@ -781,6 +866,29 @@ public class MIDITools {
     private static void deleteEventsFromTrack(Track track, ArrayList<MidiEvent> eventsToRemove) {
         for(MidiEvent e : eventsToRemove) {
             track.remove(e);
+        }
+    }
+
+    /**
+     * Displays a message listing out what channels were modified, prefixed by the given message
+     * @param channelsModified - The list of channels modified
+     * @param messagePrefix - The message to put in front of the list of channels
+     */
+    private static void showChannelsModifiedMessage(ArrayList<String> channelsModified, String messagePrefix) {
+        if (!channelsModified.isEmpty()) {
+            String channelString = String.join(", ", channelsModified);
+            System.out.println(messagePrefix + ": " + channelString);
+        }
+    }
+
+    /**
+     * Logs a message if verbose logging is enabled
+     * @param message - The message to log
+     * @param channel - The channel to include in the message
+     */
+    private static void verboseLog(String message, int channel) {
+        if (verboseLogging) {
+            System.out.println("Channel " + (channel + 1) + ": " + message);
         }
     }
 

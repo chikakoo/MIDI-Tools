@@ -13,6 +13,7 @@ public class MIDITools {
         Undefined,
         PitchBend,
         Vibrato,
+        Reverb,
         CleanUp,
         Add,
         Subtract
@@ -32,12 +33,6 @@ public class MIDITools {
      * Anvil Studio assumes it's 2 if no range is explicitly set
      */
     public static double defaultPitchBendRange = 2;
-
-    /**
-     * The default range to use for vibrato - 5 seems to be the equivalent
-     * of OoT's 127, but this is situational
-     */
-    private final static double DEFAULT_VIBRATO_RANGE = 5;
 
     /**
      * Clean-up section
@@ -85,13 +80,22 @@ public class MIDITools {
                     PitchBendAdjuster.editMidiPitchBends(sequence);
                     break;
                 case Vibrato:
-                    double defaultVibratoRange = DEFAULT_VIBRATO_RANGE;
+                    double defaultVibratoRange = VibratoAdjuster.DEFAULT_RANGE;
                     nextParameter = getNextParameter(args, argIndex);
                     if (!nextParameter.isEmpty()) {
                         defaultVibratoRange = Integer.parseInt(getNextParameter(args, argIndex));
                         argIndex++;
                     }
                     VibratoAdjuster.editMidiVibrato(sequence, defaultVibratoRange);
+                    break;
+                case Reverb:
+                    double defaultReverbRange = ReverbAdjuster.DEFAULT_RANGE;
+                    nextParameter = getNextParameter(args, argIndex);
+                    if (!nextParameter.isEmpty()) {
+                        defaultReverbRange = Integer.parseInt(getNextParameter(args, argIndex));
+                        argIndex++;
+                    }
+                    ReverbAdjuster.editMidiReverb(sequence, defaultReverbRange);
                     break;
                 case CleanUp:
                     nextParameter = getNextParameter(args, argIndex);
@@ -212,6 +216,8 @@ public class MIDITools {
                 return Transformation.PitchBend;
             case "-v":
                 return Transformation.Vibrato;
+            case "-r":
+                return Transformation.Reverb;
             case "-c":
                 return Transformation.CleanUp;
             case "-a":
@@ -244,6 +250,12 @@ public class MIDITools {
         System.out.println("\tAdjusts all modulation events to be vibrato depth events instead");
         System.out.println("\tCreates new events adjusted to the given range value");
         System.out.println("\tFor example, modulation of 127 would create a vibrato depth of 5");
+        System.out.println();
+
+        System.out.println("-r (reverb) [reverb range = 26]");
+        System.out.println("\tAdjusts all ReverbSendDepth events to the given range");
+        System.out.println("\tCreates new events adjusted to the given range value");
+        System.out.println("\tFor example, a value of 127 would convert to a 5");
         System.out.println();
 
         System.out.println("-c (clean up) [event number] [tolerance = 10]");

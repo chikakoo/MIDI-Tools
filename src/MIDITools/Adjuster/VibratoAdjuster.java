@@ -1,11 +1,14 @@
 package MIDITools.Adjuster;
 
-import MIDITools.MIDITools;
-
 import javax.sound.midi.*;
-import java.util.ArrayList;
 
 public class VibratoAdjuster extends MIDIAdjuster {
+    /**
+     * The default range to use for vibrato - 5 seems to be the equivalent
+     * of OoT's 127, but this is situational
+     */
+    public final static double DEFAULT_RANGE = 5;
+
     private static final int VIBRATO_DEPTH_EVENT = 77;
     private static final int MODULATION_EVENT = 1;
 
@@ -17,7 +20,7 @@ public class VibratoAdjuster extends MIDIAdjuster {
      * @param range - The max value the vibrato depth should have
      */
     public static void editMidiVibrato(Sequence sequence, double range) {
-        EventReplacer.replaceMidiEvents(
+        new EventReplacer().replaceMidiEvents(
             sequence,
             MODULATION_EVENT,
             VIBRATO_DEPTH_EVENT,

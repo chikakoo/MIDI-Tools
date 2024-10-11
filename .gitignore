@@ -25,3 +25,6 @@ replay_pid*
 
 # User-specific stuff
 .idea
+
+# Out directory
+out/*

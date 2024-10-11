@@ -168,7 +168,7 @@ public class MIDITools {
         boolean areArgsValid = args.length >= 2 && !args[0].trim().isEmpty();
 
         // Check whether the second argument is the verbose flag and set it if so
-        if (args[1].trim().equals(VERBOSE_FLAG)) {
+        if (areArgsValid && args[1].trim().equals(VERBOSE_FLAG)) {
             verboseLogging = true;
 
             // If there's a verbose flag, we need one more argument!
@@ -260,9 +260,8 @@ public class MIDITools {
 
         System.out.println("-c (clean up) [event number] [tolerance = 10]");
         System.out.println("\tCleans up all events of the given number to be within the tolerance");
-        System.out.println("\tWill not clean up values that switch directions");
-        System.out.println("\tFor example, events with values 10, 12, 14, 16, 18, 20, 18");
-        System.out.println("\tWould be cleaned up to: 10, 20, 18");
+        System.out.println("\tFor example, events with values 10, 12, 14, 16, 18, 20");
+        System.out.println("\tWould be cleaned up to: 10, 20");
         System.out.println("\tFor pitch bends specifically, pass 'pitch-bend' for the event number");
         System.out.println();
 

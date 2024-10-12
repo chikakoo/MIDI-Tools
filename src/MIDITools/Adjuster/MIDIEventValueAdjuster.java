@@ -12,12 +12,14 @@ public class MIDIEventValueAdjuster extends MIDIAdjuster {
      * @param eventNumber - The event number (if not modifying pitch bends)
      * @param amount - The amount to modify by - negative number to subtract
      * @param modifyPitchBendEvent - Whether this is modifying a pitch bend event
+     * @param channelToModify - The channel to modify (if given negative, runs for all channels)
      */
     public static void addOrSubtractMidiEventValue(
             Sequence sequence,
             int eventNumber,
             int amount,
-            boolean modifyPitchBendEvent) {
+            boolean modifyPitchBendEvent,
+            int channelToModify) {
         Set<String> channelsAdjusted = new HashSet<>();
         for (Track track : sequence.getTracks()) {
             for (int i = 0; i < track.size(); i++) {
@@ -28,8 +30,13 @@ public class MIDIEventValueAdjuster extends MIDIAdjuster {
                     ShortMessage shortMsg = (ShortMessage) msg;
                     int command = shortMsg.getCommand();
                     int channel = shortMsg.getChannel();
+                    int anvilStudioChannel = channel + 1;
                     int data1 = shortMsg.getData1();
                     int data2 = shortMsg.getData2();
+
+                    if (channelToModify >= 0 && anvilStudioChannel != channelToModify) {
+                        continue;
+                    }
 
                     if (modifyPitchBendEvent) {
                         if (command == ShortMessage.PITCH_BEND) {
@@ -60,6 +67,6 @@ public class MIDIEventValueAdjuster extends MIDIAdjuster {
         String eventString = modifyPitchBendEvent
                 ? "Pitch Bend events"
                 : "Event " + eventNumber;
-        showChannelsModifiedMessage(new ArrayList<>(channelsAdjusted), eventString + " changed by " + amount + " on channels: ");
+        showChannelsModifiedMessage(new ArrayList<>(channelsAdjusted), eventString + " changed by " + amount + " on channels");
     }
 }

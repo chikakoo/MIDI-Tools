@@ -84,7 +84,7 @@ public class PitchBendAdjuster extends MIDIAdjuster {
 
         if (!adjustedAnyBends) {
             MIDIAdjuster.printMessages(pitchBendRangeMessages);
-            System.out.println("Did not find any pitch bends to adjust - exiting.");
+            System.out.println("Did not find any pitch bends to adjust.");
             return;
         }
 
@@ -112,7 +112,6 @@ public class PitchBendAdjuster extends MIDIAdjuster {
 
             if (msg instanceof ShortMessage) {
                 ShortMessage shortMsg = (ShortMessage)msg;
-                int anvilStudioChannel = shortMsg.getChannel() + 1;
                 int command = shortMsg.getCommand();
                 int data1 = shortMsg.getData1();
                 int data2 = shortMsg.getData2();
@@ -120,7 +119,6 @@ public class PitchBendAdjuster extends MIDIAdjuster {
                 // Adjust the bend factor both for this program and in Anvil Studio
                 if (command == ShortMessage.CONTROL_CHANGE && data1 == PITCH_BEND_RANGE_DATA) {
                     if (data2 == DESIRED_PITCH_BEND_RANGE) {
-                        pitchBendRangeMessages.add("Channel " + anvilStudioChannel + ": Channel already has a pitch bend range of " + DESIRED_PITCH_BEND_RANGE + ".");
                         return 0;
                     } else {
                         return getNewPitchBendRangeFactor(shortMsg, pitchBendRangeMessages);

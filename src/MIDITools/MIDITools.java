@@ -140,13 +140,20 @@ public class MIDITools {
                     }
                     argIndex++;
 
+                    int channelToModify = -1;
+                    nextParameter = getNextParameter(args, argIndex);
+                    if (!nextParameter.isEmpty()) {
+                        channelToModify = Integer.parseInt(getNextParameter(args, argIndex));
+                        argIndex++;
+                    }
+
                     // Make the amount negative if we're subtracting
                     if (transformation == Transformation.Subtract) {
                         amount *= -1;
                     }
 
                     MIDIEventValueAdjuster.addOrSubtractMidiEventValue(
-                        sequence, eventNumber, amount, eventNumber == -1);
+                        sequence, eventNumber, amount, eventNumber == -1, channelToModify);
                     break;
             }
 
@@ -265,14 +272,16 @@ public class MIDITools {
         System.out.println("\tFor pitch bends specifically, pass 'pitch-bend' for the event number");
         System.out.println();
 
-        System.out.println("-a (add) [event number] [amount]");
+        System.out.println("-a (add) [event number] [amount] [channel = -1]");
         System.out.println("\tAdds the given amount from all instances of the given event");
         System.out.println("\tFor pitch bends specifically, pass 'pitch-bend' for the event number");
+        System.out.println("\tWill run it only for the given channel (if negative, runs for all)");
         System.out.println();
 
-        System.out.println("-s (subtract) [event number] [amount]");
+        System.out.println("-s (subtract) [event number] [amount] [channel = -1]");
         System.out.println("\tSubtracts the given amount from all instances of the given event");
         System.out.println("\tFor pitch bends specifically, pass 'pitch-bend' for the event number");
+        System.out.println("\tWill run it only for the given channel (if negative, runs for all)");
         System.out.println();
 
         System.out.println("example: test.midi -p 3 -v -c 10 -a 77 1");
@@ -294,7 +303,10 @@ public class MIDITools {
         try {
             int midiFileType =  MidiSystem.getMidiFileFormat(midiFile).getType();
             MidiSystem.write(sequence, midiFileType, file);
+
+            System.out.println();
             System.out.println("File written to: " + outFileName);
+            System.out.println();
         } catch (IOException | InvalidMidiDataException e) {
             e.printStackTrace();
         }

@@ -7,8 +7,8 @@ REM -p (pitch bend) [default range = 2]"
 REM -v (vibrato) [vibrato range = 5]
 REM -r (reverb) [reverb range = 26]
 REM -c (clean up) [event number] [tolerance = 10]
-REM -a (add) [event number] [amount]
-REM -s (subtract) [event number] [amount]
+REM -a (add) [event number] [amount] [channel = -1]
+REM -s (subtract) [event number] [amount] [channel = -1]
 
 REM --------------------------------------------------------------------
 REM For reference, commonly used event numbers for the -c, -a, and -s flags:

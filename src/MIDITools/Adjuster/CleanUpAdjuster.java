@@ -17,7 +17,11 @@ public class CleanUpAdjuster extends MIDIAdjuster {
             int eventNumber,
             int tolerance,
             boolean cleanUpPitchBend) {
-        ArrayList<String> channelsCleanedUp = new ArrayList<>();
+
+        String eventString = cleanUpPitchBend
+            ? "Pitch Bend events"
+            : "Event " + eventNumber;
+
         for (Track track : sequence.getTracks()) {
             ArrayList<MidiEvent> eventsToDelete = new ArrayList<>();
             int lastBaseValue = -1;
@@ -65,10 +69,10 @@ public class CleanUpAdjuster extends MIDIAdjuster {
                     if (!isValueWithinTolerance(lastBaseValue, value, tolerance)) {
                         eventsToDelete.add(e);
 
-                        String eventString = cleanUpPitchBend
+                        String eventDelString = cleanUpPitchBend
                                 ? "Pitch Bend event"
                                 : "event " + eventNumber;
-                        verboseLog("Deleted " + eventString + " at tick " + e.getTick(), channel);
+                        verboseLog("Deleted " + eventDelString + " at tick " + e.getTick(), channel);
                     }
 
                     // Otherwise, we've kept the event, so update the base value
@@ -78,16 +82,12 @@ public class CleanUpAdjuster extends MIDIAdjuster {
                 }
             }
 
-            if (!eventsToDelete.isEmpty()) {
-                channelsCleanedUp.add(String.valueOf(channel + 1));
-            }
+            int numberOfEventsToDelete = eventsToDelete.size();
             deleteEventsFromTrack(track, eventsToDelete);
+            if (numberOfEventsToDelete > 0) {
+                System.out.println("Channel " + (channel + 1) + ": " + eventsToDelete.size() + " " + eventString + " cleaned up.");
+            }
         }
-
-        String eventString = cleanUpPitchBend
-                ? "Pitch Bend events"
-                : "Event " + eventNumber;
-        showChannelsModifiedMessage(channelsCleanedUp, eventString + " cleaned up on channels");
     }
 
     /**

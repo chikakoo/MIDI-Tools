@@ -134,8 +134,11 @@ public class MIDITools {
         System.out.println("\tFor example, a value of 127 would convert to a 5");
         System.out.println();
 
-        System.out.println("-c (clean up) [event number] [tolerance = 10]");
+        System.out.println("-c (clean up) [event number] [tolerance = 10] [tick tolerance = 240]");
         System.out.println("\tCleans up all events of the given number to be within the tolerance");
+        System.out.println("\t- Will group into groups divided by the tick tolerance, which is");
+        System.out.println("\t- the amount of time before the next event of this type");
+        System.out.println("\t- Will never clean up the last event in any group, to preserve the value");
         System.out.println("\tFor example, events with values 10, 12, 14, 16, 18, 20");
         System.out.println("\tWould be cleaned up to: 10, 20");
         System.out.println("\tFor pitch bends specifically, pass 'pitch-bend' for the event number");

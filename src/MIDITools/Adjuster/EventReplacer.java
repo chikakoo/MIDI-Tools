@@ -3,7 +3,7 @@ package MIDITools.Adjuster;
 import javax.sound.midi.*;
 import java.util.ArrayList;
 
-public class EventReplacer extends MIDIAdjuster {
+public abstract class EventReplacer extends MIDIAdjuster {
     /**
      * All supported events here have a max of 127
      */
@@ -13,7 +13,7 @@ public class EventReplacer extends MIDIAdjuster {
      * A list of the MIDI events to delete at the end
      * We need to do this at the end in case the old and new events are the same
      */
-    private ArrayList<MidiEvent> eventsToDelete = new ArrayList<>();
+    private final ArrayList<MidiEvent> eventsToDelete = new ArrayList<>();
 
     /**
      * Takes in an event of one type and replaces instances of this value with events of a second type
@@ -23,7 +23,7 @@ public class EventReplacer extends MIDIAdjuster {
      * @param divisionAmount - The amount to divide the old event by when creating the new event
      * @param eventDisplayName - The display name of the event, for logging
      */
-    public void replaceMidiEvents(
+    protected void replaceMidiEvents(
             Sequence sequence,
             int oldEventNumber,
             int newEventNumber,

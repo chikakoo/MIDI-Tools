@@ -2,13 +2,45 @@ package MIDITools.Adjuster;
 
 import MIDITools.MIDITools;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 import java.util.ArrayList;
 
-public class MIDIAdjuster {
+public abstract class MIDIAdjuster {
+    /**
+     * What to use as the event number parameter for pitch bends
+     */
+    public static final String PITCH_BEND_ARG = "pitch-bend";
+
+    /**
+     * Executes the transformation and returns the index of the next one (or the end of the list)
+     * @param args - All the args passed via command line
+     * @param currentIndex The index to start looking (the one at the current transformation flag)
+     * @param sequence The sequence we are modifying
+     * @return The index after the last parameter (or -1 if there was a problem)
+     */
+    public abstract int execute(String[] args, int currentIndex, Sequence sequence);
+
+    /**
+     * Gets all the arguments from the current index and returns them in a list
+     * - Flags are currently found by checking whether the string stars with a hyphen (-)
+     * @param args - All the args passed via command line
+     * @param currentIndex - The index of the flag to get args for
+     * @return All the args until either the end of the list, or the next flag
+     */
+    protected ArrayList<String> getAllArgs(String[] args, int currentIndex) {
+        ArrayList<String> transformationArgs = new ArrayList<>();
+
+        // Note that we start looking for args one AFTER where we begin!
+        for(int i = currentIndex + 1; i < args.length; i++) {
+            String arg = args[i].trim();
+            if (arg.startsWith("-")) {
+                break;
+            }
+            transformationArgs.add(arg);
+        }
+        return transformationArgs;
+    }
+
     /**
      * Prints the given list of messages
      * @param messages - the messages to print

@@ -6,19 +6,6 @@ import javax.sound.midi.*;
 import java.io.*;
 
 public class MIDITools {
-    /**
-     * The different transformations that can be done to a MIDI
-     */
-    private enum Transformation {
-        Undefined,
-        PitchBend,
-        Vibrato,
-        Reverb,
-        CleanUp,
-        Add,
-        Subtract
-    }
-
     //<editor-fold desc="Constants">
 
     /**
@@ -27,17 +14,6 @@ public class MIDITools {
      */
     private static final String VERBOSE_FLAG = "--verbose";
     public static boolean verboseLogging = false;
-
-    /**
-     * OoT assumes the pitch bend range is the full octave (a range of 12)
-     * Anvil Studio assumes it's 2 if no range is explicitly set
-     */
-    public static double defaultPitchBendRange = 2;
-
-    /**
-     * Clean-up section
-     */
-    private static final int DEFAULT_CLEAN_UP_TOLERANCE = 10;
 
     //</editor-fold>
 
@@ -60,107 +36,36 @@ public class MIDITools {
             return;
         }
 
-        int argIndex = verboseLogging ? 2 : 1; // The logging flag adds one argument
-        do {
-            Transformation transformation = getTransformation(args[argIndex]);
-            if (transformation == Transformation.Undefined) {
-                showUsage("ERROR: Unrecognized transformation [" + args[argIndex].trim() + "]");
+        int startingIndex = verboseLogging ? 2 : 1; // The logging flag adds one argument
+        processTransformations(args, startingIndex, sequence);
+
+        writeSequenceToFile(midiFileName, midiFile, sequence);
+    }
+
+    /**
+     * Processes all the transformations, starting at the given index
+     * @param args - The args passed in via command line
+     * @param startingIndex - The index to start processing from
+     * @param sequence - The sequence file to process
+     */
+    private static void processTransformations(String[] args, int startingIndex, Sequence sequence) {
+        int argIndex = startingIndex;
+        while (argIndex < args.length) {
+            String flag = args[argIndex];
+            MIDIAdjuster adjuster = MIDIAdjusterFactory.getMIDIAdjusterByFlag(flag);
+
+            if (adjuster == null) {
+                System.out.println("ERROR: Invalid flag " + flag + " at index " + argIndex + ".");
                 System.exit(0);
             }
 
-            String nextParameter = "";
-            int eventNumber = -1;
-            switch(transformation) {
-                case PitchBend:
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        defaultPitchBendRange = Double.parseDouble(getNextParameter(args, argIndex));
-                        argIndex++;
-                    }
-                    PitchBendAdjuster.editMidiPitchBends(sequence);
-                    break;
-                case Vibrato:
-                    double defaultVibratoRange = VibratoAdjuster.DEFAULT_RANGE;
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        defaultVibratoRange = Integer.parseInt(getNextParameter(args, argIndex));
-                        argIndex++;
-                    }
-                    VibratoAdjuster.editMidiVibrato(sequence, defaultVibratoRange);
-                    break;
-                case Reverb:
-                    double defaultReverbRange = ReverbAdjuster.DEFAULT_RANGE;
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        defaultReverbRange = Integer.parseInt(getNextParameter(args, argIndex));
-                        argIndex++;
-                    }
-                    ReverbAdjuster.editMidiReverb(sequence, defaultReverbRange);
-                    break;
-                case CleanUp:
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.equals("pitch-bend")) {
-                        if (!nextParameter.isEmpty()) {
-                            eventNumber = Integer.parseInt(getNextParameter(args, argIndex));
-                        } else {
-                            showUsage("Missing required event number parameter in clean-up flag.");
-                            System.exit(0);
-                        }
-                    }
-                    argIndex++;
-
-                    int tolerance = DEFAULT_CLEAN_UP_TOLERANCE;
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        tolerance = Integer.parseInt(getNextParameter(args, argIndex));
-                        argIndex++;
-                    }
-                    CleanUpAdjuster.cleanUpMidiEvent(sequence, eventNumber, tolerance, eventNumber == -1);
-                    break;
-                case Add:
-                case Subtract:
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.equals("pitch-bend")) {
-                        if (!nextParameter.isEmpty()) {
-                            eventNumber = Integer.parseInt(getNextParameter(args, argIndex));
-                        } else {
-                            showUsage("Missing required event number parameter in add/subtract flag.");
-                            System.exit(0);
-                        }
-                    }
-                    argIndex++;
-
-                    int amount = -1;
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        amount = Integer.parseInt(getNextParameter(args, argIndex));
-                    } else {
-                        showUsage("Missing required amount parameter in add/subtract flag.");
-                        System.exit(0);
-                    }
-                    argIndex++;
-
-                    int channelToModify = -1;
-                    nextParameter = getNextParameter(args, argIndex);
-                    if (!nextParameter.isEmpty()) {
-                        channelToModify = Integer.parseInt(getNextParameter(args, argIndex));
-                        argIndex++;
-                    }
-
-                    // Make the amount negative if we're subtracting
-                    if (transformation == Transformation.Subtract) {
-                        amount *= -1;
-                    }
-
-                    MIDIEventValueAdjuster.addOrSubtractMidiEventValue(
-                        sequence, eventNumber, amount, eventNumber == -1, channelToModify);
-                    break;
+            argIndex = adjuster.execute(args, argIndex, sequence);
+            if (argIndex == -1) {
+                // We would have already displayed the main error at this point, so just show usage and exit
+                showUsage();
+                System.exit(0);
             }
-
-            argIndex++;
-        } while (argIndex < args.length );
-
-        writeSequenceToFile(midiFileName, midiFile, sequence);
+        }
     }
 
     /**
@@ -192,48 +97,10 @@ public class MIDITools {
     }
 
     /**
-     * Gets the next parameter from the arguments
-     * - If it is a flag or the end of the array, return the empty string
-     * @param args - The arguments array
-     * @param currentIndex - The index of the current value we are at (the one BEFORE the one we're trying to get)
-     * @return The next parameter, or the empty string if there is none
+     * Shows the usage description
      */
-    private static String getNextParameter(String[] args, int currentIndex) {
-        int nextIndex = currentIndex + 1;
-        if (nextIndex >= args.length) {
-            return ""; // End of the array
-        }
-
-        String nextValue = args[nextIndex].trim();
-        if (nextValue.startsWith("-")) {
-            return ""; // This is a flag!
-        }
-
-        return args[nextIndex];
-    }
-
-    /**
-     * Gets the Transformation from the given flag
-     * @param transformationString - The flag
-     * @return The transformation corresponding to the given flag
-     */
-    private static Transformation getTransformation(String transformationString) {
-        switch(transformationString.trim()) {
-            case "-p":
-                return Transformation.PitchBend;
-            case "-v":
-                return Transformation.Vibrato;
-            case "-r":
-                return Transformation.Reverb;
-            case "-c":
-                return Transformation.CleanUp;
-            case "-a":
-                return Transformation.Add;
-            case "-s":
-                return Transformation.Subtract;
-            default:
-                return Transformation.Undefined;
-        }
+    private static void showUsage() {
+        showUsage("");
     }
 
     /**
@@ -241,8 +108,10 @@ public class MIDITools {
      * @param error - The reason usage is being shown
      */
     private static void showUsage(String error) {
-        System.out.println(error);
-        System.out.println();
+        if (!error.isEmpty()) {
+            System.out.println(error);
+            System.out.println();
+        }
 
         System.out.println("usage: [midi filename] [--verbose (optional)] [a list of flags and their parameters]");
         System.out.println("\tRuns all given parameter transformations in the order given.");

@@ -1,12 +1,16 @@
 package MIDITools.Adjuster;
 
-import MIDITools.MIDITools;
-
 import javax.sound.midi.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class PitchBendAdjuster extends MIDIAdjuster {
+    /**
+     * OoT assumes the pitch bend range is the full octave (a range of 12)
+     * Anvil Studio assumes it's 2 if no range is explicitly set
+     */
+    public double defaultPitchBendRange = 2;
+
     /**
      * Anvil Studio uses the "Data Slider" event for this
      * It uses the CONTROL_CHANGE message, with a Data 1 value of 6
@@ -28,13 +32,37 @@ public class PitchBendAdjuster extends MIDIAdjuster {
      */
     private static final int DESIRED_PITCH_BEND_RANGE = 12;
 
+    private static final int INDEX_RANGE_ARG = 0;
+
+    /**
+     * {@inheritDoc}
+     * Expected usage: -p [default range = 2]
+     */
+    @Override
+    public int execute(String[] args, int currentIndex, Sequence sequence) {
+        ArrayList<String> transformationArgs = getAllArgs(args, currentIndex);
+
+        if (transformationArgs.size() > 1) {
+            System.out.println("ERROR: Incorrect number of args passed to -p (expected 0-1)");
+            return -1;
+        }
+
+        if (!transformationArgs.isEmpty()) {
+            defaultPitchBendRange = Double.parseDouble(transformationArgs.get(INDEX_RANGE_ARG));
+        }
+
+        editMidiPitchBends(sequence);
+
+        return currentIndex + transformationArgs.size() + 1;
+    }
+
     /**
      * Modifies the pitch bends
      * - This does not handle pitch bend range changes in the middle of the track very well
      * - Try to scan for this and adjust the midi accordingly before running this
      * @param sequence - The sequence to modify
      */
-    public static void editMidiPitchBends(Sequence sequence) {
+    private void editMidiPitchBends(Sequence sequence) {
         ArrayList<String> pitchBendRangeMessages = new ArrayList<>();
         ArrayList<String> channelsWithAdjustments = new ArrayList<>();
 
@@ -103,7 +131,7 @@ public class PitchBendAdjuster extends MIDIAdjuster {
      * @param pitchBendRangeMessages - A list of messages to display for pitch bends - adds to it if we're skipping
      * @return A double indicating the new pitch bend range factor, or 0 if we're not adjusting
      */
-    private static double tryGetNewPitchBendRangeFactor(
+    private double tryGetNewPitchBendRangeFactor(
             Track track,
             ArrayList<String> pitchBendRangeMessages) {
         for (int i = 0; i < track.size(); i++) {
@@ -130,7 +158,7 @@ public class PitchBendAdjuster extends MIDIAdjuster {
         // If it gets here, no message was found, so adjust by the default factor
         // The bend factor is equal to the desired range divided by what the range is now
         // - So, if both are the same, the bend factor is 1, meaning no adjustments needed
-        return (double)DESIRED_PITCH_BEND_RANGE / MIDITools.defaultPitchBendRange;
+        return (double)DESIRED_PITCH_BEND_RANGE / defaultPitchBendRange;
     }
 
     /**
@@ -195,7 +223,7 @@ public class PitchBendAdjuster extends MIDIAdjuster {
      * @param pitchBendRangeMessages - an array of messages to potentially add to
      * @return The bend factor to use
      */
-    private static double getNewPitchBendRangeFactor(ShortMessage shortMsg, ArrayList<String> pitchBendRangeMessages) {
+    private double getNewPitchBendRangeFactor(ShortMessage shortMsg, ArrayList<String> pitchBendRangeMessages) {
         int channel = shortMsg.getChannel();
         int anvilStudioChannel = channel + 1;
         int oldPitchBendRange = shortMsg.getData2();
@@ -204,7 +232,7 @@ public class PitchBendAdjuster extends MIDIAdjuster {
         // Same story for those with a value less than 1
         // Anvil Studio treats it as a 2, so we will do the same
         double bendFactor = (oldPitchBendRange > DESIRED_PITCH_BEND_RANGE) && (oldPitchBendRange > 0)
-                ? (double)DESIRED_PITCH_BEND_RANGE / MIDITools.defaultPitchBendRange
+                ? (double)DESIRED_PITCH_BEND_RANGE / defaultPitchBendRange
                 : (double)DESIRED_PITCH_BEND_RANGE / oldPitchBendRange;
 
         DecimalFormat df = new DecimalFormat();

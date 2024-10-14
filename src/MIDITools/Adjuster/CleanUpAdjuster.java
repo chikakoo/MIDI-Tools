@@ -5,20 +5,84 @@ import java.util.ArrayList;
 
 public class CleanUpAdjuster extends MIDIAdjuster {
     /**
-     * Cleans up midi events by deleting events that are too close to their previous value
+     * The default tolerance to use for clean up
+     */
+    private static final int DEFAULT_TOLERANCE = 10;
+
+    private static final int INDEX_EVENT_NUMBER_ARG = 0;
+    private static final int INDEX_TOLERANCE_ARG = 1;
+
+
+    /**
+     * {@inheritDoc}
+     * Expected usage: -c [event number] [tolerance = 10]
+     */
+    @Override
+    public int execute(String[] args, int currentIndex, Sequence sequence) {
+        ArrayList<String> transformationArgs = getAllArgs(args, currentIndex);
+
+        if (transformationArgs.isEmpty() || transformationArgs.size() > 2) {
+            System.out.println("ERROR: Incorrect number of args passed to -c (expected 1-2)");
+            return -1;
+        }
+
+        int tolerance = DEFAULT_TOLERANCE;
+        if (transformationArgs.size() > INDEX_TOLERANCE_ARG) {
+            tolerance = Integer.parseInt(transformationArgs.get(INDEX_TOLERANCE_ARG));
+        }
+
+        String eventNumberString = transformationArgs.get(INDEX_EVENT_NUMBER_ARG);
+        if (eventNumberString.equals(PITCH_BEND_ARG)) {
+            cleanUpMidiPitchBends(sequence, tolerance);
+        } else {
+            int eventNumber = Integer.parseInt(eventNumberString);
+            cleanUpMidiShortMessageEvents(sequence, eventNumber, tolerance);
+        }
+
+        return currentIndex + transformationArgs.size() + 1;
+    }
+
+    /**
+     * Cleans up midi short message events by deleting events that are too close to their previous value
      * within a given tolerance
      * @param sequence - The sequence to modify
      * @param eventNumber - The number of the event to modify (not used if cleaning up pitch bends)
      * @param tolerance - The tolerance
-     * @param cleanUpPitchBend - If true, cleans up pitch bends instead of the given event number
      */
-    public static void cleanUpMidiEvent(
+    private static void cleanUpMidiShortMessageEvents(
             Sequence sequence,
             int eventNumber,
-            int tolerance,
-            boolean cleanUpPitchBend) {
+            int tolerance) {
+        cleanUpMidiEvent(sequence, eventNumber, tolerance);
+    }
 
-        String eventString = cleanUpPitchBend
+    /**
+     * Cleans up pitch bend events by deleting events that are too close to their previous value
+     * within a given tolerance
+     * @param sequence - The sequence to modify
+     * @param tolerance - The tolerance
+     */
+    private static void cleanUpMidiPitchBends(
+            Sequence sequence,
+            int tolerance) {
+        cleanUpMidiEvent(sequence, -1, tolerance);
+    }
+
+    /**
+     * Cleans up midi events by deleting events that are too close to their previous value
+     * within a given tolerance
+     * @param sequence - The sequence to modify
+     * @param eventNumber - The number of the event to modify (pass in -1 if cleaning up pitch bends)
+     * @param tolerance - The tolerance
+     */
+    private static void cleanUpMidiEvent(
+            Sequence sequence,
+            int eventNumber,
+            int tolerance) {
+        // This is a pitch bend if we're not given a valid event
+        boolean cleanUpPitchBends = eventNumber == -1;
+
+        String eventString = cleanUpPitchBends
             ? "Pitch Bend events"
             : "Event " + eventNumber;
 
@@ -38,7 +102,7 @@ public class CleanUpAdjuster extends MIDIAdjuster {
                     int data2 = shortMsg.getData2();
                     int value = -1;
 
-                    if (cleanUpPitchBend) {
+                    if (cleanUpPitchBends) {
                         if (command == ShortMessage.PITCH_BEND) {
                             value = PitchBendAdjuster.getPitchBendValue(data1, data2);
                         } else {
@@ -69,7 +133,7 @@ public class CleanUpAdjuster extends MIDIAdjuster {
                     if (!isValueWithinTolerance(lastBaseValue, value, tolerance)) {
                         eventsToDelete.add(e);
 
-                        String eventDelString = cleanUpPitchBend
+                        String eventDelString = cleanUpPitchBends
                                 ? "Pitch Bend event"
                                 : "event " + eventNumber;
                         verboseLog("Deleted " + eventDelString + " at tick " + e.getTick(), channel);

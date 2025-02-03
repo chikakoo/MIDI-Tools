@@ -110,8 +110,8 @@ public class MIDIEventValueAdjuster extends MIDIAdjuster {
                             int oldPitchBendValue = PitchBendAdjuster.getPitchBendValue(data1, data2);
                             int newPitchBendValue = oldPitchBendValue + amount;
 
-                            int newData1 = oldPitchBendValue % 128;
-                            int newData2 = oldPitchBendValue / 128;
+                            int newData1 = newPitchBendValue % 128;
+                            int newData2 = newPitchBendValue / 128;
                             setShortMessage(shortMsg, ShortMessage.PITCH_BEND, channel, newData1, newData2);
 
                             String valueString = oldPitchBendValue + " -> " + newPitchBendValue;

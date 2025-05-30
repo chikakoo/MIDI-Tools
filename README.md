@@ -32,6 +32,9 @@ Command line tool to help with MIDI adjustments when making Ocarina of Time sequ
 - Would be cleaned up to: 10, 20
 - For pitch bends specifically, pass 'pitch-bend' for the event number
 
+**-e (expression)**
+- Replaces all expression events with volume events
+
 **-a (add) [event number] [amount]**
 - Adds the given amount from all instances of the given event
 - For pitch bends specifically, pass 'pitch-bend' for the event number

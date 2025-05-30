@@ -7,6 +7,7 @@ REM -p (pitch bend) [default range = 2]"
 REM -v (vibrato) [vibrato range = 5]
 REM -r (reverb) [reverb range = 26]
 REM -c (clean up) [event number] [tolerance = 10] [tick tolerance = 240]
+REM -e (expression)
 REM -a (add) [event number] [amount] [channel = -1]
 REM -s (subtract) [event number] [amount] [channel = -1]
 

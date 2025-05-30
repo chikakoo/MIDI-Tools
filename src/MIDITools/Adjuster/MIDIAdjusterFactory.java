@@ -16,6 +16,8 @@ public class MIDIAdjusterFactory {
                 return new ReverbAdjuster();
             case "-c":
                 return new CleanUpAdjuster();
+            case "-e":
+                return new ExpressionAdjuster();
             case "-a":
             case "-s":
                 return new MIDIEventValueAdjuster();

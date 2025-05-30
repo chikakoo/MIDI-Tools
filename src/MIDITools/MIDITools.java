@@ -134,6 +134,10 @@ public class MIDITools {
         System.out.println("\tFor example, a value of 127 would convert to a 5");
         System.out.println();
 
+        System.out.println("-e (expression)");
+        System.out.println("\tReplaces all expression events with volume events");
+        System.out.println();
+
         System.out.println("-c (clean up) [event number] [tolerance = 10] [tick tolerance = 240]");
         System.out.println("\tCleans up all events of the given number to be within the tolerance");
         System.out.println("\t- Will group into groups divided by the tick tolerance, which is");

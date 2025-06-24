@@ -21,6 +21,8 @@ public class MIDIAdjusterFactory {
             case "-a":
             case "-s":
                 return new MIDIEventValueAdjuster();
+            case "-m":
+                return new EventMover();
             default:
                 return null;
         }

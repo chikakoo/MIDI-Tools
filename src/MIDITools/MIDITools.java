@@ -160,6 +160,11 @@ public class MIDITools {
         System.out.println("\tWill run it only for the given channel (if negative, runs for all)");
         System.out.println();
 
+        System.out.println("-m (move to start) [space-delimited event numbers]");
+        System.out.println("\tMoves the first instance of the given event(s) to the start of the song");
+        System.out.println("\tUse program-change for program change events");
+        System.out.println();
+
         System.out.println("example: test.midi -p 3 -v -c 10 -a 77 1");
         System.out.println("\tCleans up pitch bends to a default range of 3");
         System.out.println("\tReplaces modulation events with vibrato depth, with the default range");

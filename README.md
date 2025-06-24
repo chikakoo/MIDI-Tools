@@ -43,6 +43,10 @@ Command line tool to help with MIDI adjustments when making Ocarina of Time sequ
 - Subtracts the given amount from all instances of the given event
 - For pitch bends specifically, pass 'pitch-bend' for the event number
 
+**-m (move to start) [space-delimited event numbers]**
+- Moves the first instance of the given event(s) to the start of the song
+- Use program-change for program change events
+
 **example: test.midi -p 3 -v -c 10 -a 77 1**
 - Cleans up pitch bends to a default range of 3
 - Replaces modulation events with vibrato depth, with the default range

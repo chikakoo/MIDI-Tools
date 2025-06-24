@@ -10,10 +10,12 @@ REM -c (clean up) [event number] [tolerance = 10] [tick tolerance = 240]
 REM -e (expression)
 REM -a (add) [event number] [amount] [channel = -1]
 REM -s (subtract) [event number] [amount] [channel = -1]
+REM -m (move to start) [space-delimited event numbers]
 
 REM --------------------------------------------------------------------
-REM For reference, commonly used event numbers for the -c, -a, and -s flags:
-REM - pitch-bend (for pitch bends - this is the only one that doesn't use a number)
+REM For reference, commonly used event numbers for the -c, -a, -s, and -m flags:
+REM - pitch-bend
+REM - program-change
 REM - 7 (Channel Volume)
 REM - 10 (Panpot - l/r panning)
 REM - 77 (VibratoDepth - vibrato in OoT)

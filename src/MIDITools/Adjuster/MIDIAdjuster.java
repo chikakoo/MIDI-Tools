@@ -12,6 +12,11 @@ public abstract class MIDIAdjuster {
     public static final String PITCH_BEND_ARG = "pitch-bend";
 
     /**
+     * What to use as the event number parameter for program changes
+     */
+    public static final String PROGRAM_CHANGE_ARG = "program-change";
+
+    /**
      * Executes the transformation and returns the index of the next one (or the end of the list)
      * @param args - All the args passed via command line
      * @param currentIndex The index to start looking (the one at the current transformation flag)
@@ -63,7 +68,7 @@ public abstract class MIDIAdjuster {
     }
 
     /**
-     * Adds a new event short message to the midi
+     * Adds a new event short message to the midi for the control change command
      * @param track - The track to add to
      * @param channel - The channel to add to
      * @param eventNumber - The event number to add
@@ -78,9 +83,9 @@ public abstract class MIDIAdjuster {
             int eventValue,
             long tick,
             String eventDisplayName) {
-        ShortMessage vibratoDepthMessage = new ShortMessage();
-        setShortMessage(vibratoDepthMessage, ShortMessage.CONTROL_CHANGE, channel, eventNumber, eventValue);
-        track.add(new MidiEvent(vibratoDepthMessage, tick));
+        ShortMessage shortMessage = new ShortMessage();
+        setShortMessage(shortMessage, ShortMessage.CONTROL_CHANGE, channel, eventNumber, eventValue);
+        track.add(new MidiEvent(shortMessage, tick));
 
         verboseLog("Added " + eventDisplayName + " of " + eventValue + " at tick " + tick, channel);
     }

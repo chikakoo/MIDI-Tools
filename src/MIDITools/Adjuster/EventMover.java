@@ -64,16 +64,13 @@ public class EventMover extends MIDIAdjuster {
 
                     if (command == ShortMessage.PITCH_BEND && needToMovePitchBend) {
                         needToMovePitchBend = false;
-                        messagesToMove.add(shortMsg);
-                        eventsToMove.add(e);
+                        tryAddEventToMoveList(shortMsg, e, messagesToMove, eventsToMove);
                     } else if (command == ShortMessage.PROGRAM_CHANGE && needToMoveProgramChange) {
                         needToMoveProgramChange = false;
-                        messagesToMove.add(shortMsg);
-                        eventsToMove.add(e);
+                        tryAddEventToMoveList(shortMsg, e, messagesToMove, eventsToMove);
                     } else if (command == ShortMessage.CONTROL_CHANGE && eventsLeftToMove.contains(data1)) {
                         eventsLeftToMove.remove((Integer)data1);
-                        messagesToMove.add(shortMsg);
-                        eventsToMove.add(e);
+                        tryAddEventToMoveList(shortMsg, e, messagesToMove, eventsToMove);
                     }
                 }
             }
@@ -92,6 +89,26 @@ public class EventMover extends MIDIAdjuster {
             System.out.println("Did not move any events.");
         } else {
             System.out.println("Moved " + numberOfMovedEvents + " events.");
+        }
+    }
+
+    /**
+     * Tries to add the given event to the list of events to move
+     * We should not add these if they are already at tick 0, as it could cause them
+     * to be placed AFTER a note on event, which causes issues
+     * @param shortMsg - The short message of the event
+     * @param midiEvent - The midi event itself - contains the tick data
+     * @param messagesToMove - The array of messages to move to add to
+     * @param eventsToMove - The array of events to move
+     */
+    private static void tryAddEventToMoveList(
+            ShortMessage shortMsg,
+            MidiEvent midiEvent,
+            ArrayList<ShortMessage> messagesToMove,
+            ArrayList<MidiEvent> eventsToMove) {
+        if (midiEvent.getTick() > 0) {
+            messagesToMove.add(shortMsg);
+            eventsToMove.add(midiEvent);
         }
     }
 

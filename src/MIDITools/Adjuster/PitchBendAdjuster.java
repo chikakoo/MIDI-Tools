@@ -12,6 +12,13 @@ public class PitchBendAdjuster extends MIDIAdjuster {
     public double defaultPitchBendRange = 2;
 
     /**
+     * What the pitch bend value is per side (i.e. how much it can be adjusted up or down)
+     * - so, doubling this value results in a bend upward equal to the range
+     * - proving 0 will result in a bend downward equal to the range
+     */
+    public static final int BASE_VALUE = 8192;
+
+    /**
      * Anvil Studio uses the "Data Slider" event for this
      * It uses the CONTROL_CHANGE message, with a Data 1 value of 6
      */
@@ -250,8 +257,6 @@ public class PitchBendAdjuster extends MIDIAdjuster {
      * @return A boolean indicating whether we actually adjusted the value
      */
     private static boolean adjustPitchBend(ShortMessage shortMsg, double bendFactor) {
-        final int BASE_VALUE = 8192;
-
         int channel = shortMsg.getChannel();
         int value = getPitchBendValue(shortMsg.getData1(), shortMsg.getData2());
 

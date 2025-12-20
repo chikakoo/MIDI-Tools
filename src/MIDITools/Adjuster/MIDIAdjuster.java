@@ -68,6 +68,30 @@ public abstract class MIDIAdjuster {
     }
 
     /**
+     * Adds a new event short message to the midi for a given command
+     * @param track - The track to add to
+     * @param channel - The channel to add to
+     * @param data1 - The data1 of the event
+     * @param data2 - The data2 of the event
+     * @param tick - When to set it
+     * @param eventDisplayName - The name of the event to show in the verbose log
+     */
+    protected static void addNewShortMessage(
+            Track track,
+            int commandNumber,
+            int channel,
+            int data1,
+            int data2,
+            long tick,
+            String eventDisplayName) {
+        ShortMessage shortMessage = new ShortMessage();
+        setShortMessage(shortMessage, commandNumber, channel, data1, data2);
+        track.add(new MidiEvent(shortMessage, tick));
+
+        verboseLog("Added " + eventDisplayName + " of data1:data2 " + data1 + ":" + data2 + " at tick " + tick, channel);
+    }
+
+    /**
      * Adds a new event short message to the midi for the control change command
      * @param track - The track to add to
      * @param channel - The channel to add to

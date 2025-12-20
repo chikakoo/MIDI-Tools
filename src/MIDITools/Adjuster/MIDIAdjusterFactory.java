@@ -23,6 +23,8 @@ public class MIDIAdjusterFactory {
                 return new MIDIEventValueAdjuster();
             case "-m":
                 return new EventMover();
+            case "-n":
+                return new NotePitchAdjuster();
             default:
                 return null;
         }

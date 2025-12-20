@@ -165,6 +165,11 @@ public class MIDITools {
         System.out.println("\tUse program-change for program change events");
         System.out.println();
 
+        System.out.println("-n (note pitch) [channel number] [base note] [pitch bend range = 12]");
+        System.out.println("\tApplies a pitch bend to every note in the channel.");
+        System.out.println("\tThe value is equal to distance from a given base note value to the note in the channel.");
+        System.out.println();
+
         System.out.println("example: test.midi -p 3 -v -c 10 -a 77 1");
         System.out.println("\tCleans up pitch bends to a default range of 3");
         System.out.println("\tReplaces modulation events with vibrato depth, with the default range");

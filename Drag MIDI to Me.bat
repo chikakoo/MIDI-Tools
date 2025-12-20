@@ -11,6 +11,7 @@ REM -e (expression)
 REM -a (add) [event number] [amount] [channel = -1]
 REM -s (subtract) [event number] [amount] [channel = -1]
 REM -m (move to start) [space-delimited event numbers]
+REM -n (note pitch) [channel number] [base note] [pitch bend range = 12]
 
 REM --------------------------------------------------------------------
 REM For reference, commonly used event numbers for the -c, -a, -s, and -m flags:

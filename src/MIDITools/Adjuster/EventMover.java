@@ -51,18 +51,23 @@ public class EventMover extends MIDIAdjuster {
             boolean needToMoveProgramChange = movingProgramChange;
 
             for (int i = 0; i < track.size(); i++) {
-                if (!needToMovePitchBend && !needToMoveProgramChange && eventsLeftToMove.isEmpty()) {
+                MidiEvent e = track.get(i);
+                MidiMessage msg = e.getMessage();
+
+                long currentTick = e.getTick();
+                if (currentTick > 0 && !needToMovePitchBend && !needToMoveProgramChange && eventsLeftToMove.isEmpty()) {
                     break; // Nothing left to move
                 }
 
-                MidiEvent e = track.get(i);
-                MidiMessage msg = e.getMessage();
                 if (msg instanceof ShortMessage) {
                     ShortMessage shortMsg = (ShortMessage) msg;
                     int command = shortMsg.getCommand();
                     int data1 = shortMsg.getData1();
 
-                    if (command == ShortMessage.PITCH_BEND && needToMovePitchBend) {
+                    if (currentTick == 0 && command == ShortMessage.NOTE_ON) {
+                        messagesToMove.add(shortMsg);
+                        eventsToMove.add(e);
+                    } else if (command == ShortMessage.PITCH_BEND && needToMovePitchBend) {
                         needToMovePitchBend = false;
                         tryAddEventToMoveList(shortMsg, e, messagesToMove, eventsToMove);
                     } else if (command == ShortMessage.PROGRAM_CHANGE && needToMoveProgramChange) {

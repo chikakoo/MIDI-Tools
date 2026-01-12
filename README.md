@@ -46,6 +46,7 @@ Command line tool to help with MIDI adjustments when making Ocarina of Time sequ
 **-m (move to start) [space-delimited event numbers]**
 - Moves the first instance of the given event(s) to the start of the song
 - Use program-change for program change events
+- Will also make sure any note on events are placed after other events at tick 0
 
 **-n (note pitch) [channel number] [base note] [pitch bend range = 12]**
 - Applies a pitch bend to every note in the channel
